@@ -21,31 +21,31 @@
 
 from robotis_def import *
 
-TXPACKET_MAX_LEN = 4 * 1024
-RXPACKET_MAX_LEN = 4 * 1024
+TXPACKET_MAX_LEN        = 4 * 1024
+RXPACKET_MAX_LEN        = 4 * 1024
 
 # for Protocol 2.0 Packet
-PKT_HEADER0 = 0
-PKT_HEADER1 = 1
-PKT_HEADER2 = 2
-PKT_RESERVED = 3
-PKT_ID = 4
-PKT_LENGTH_L = 5
-PKT_LENGTH_H = 6
-PKT_INSTRUCTION = 7
-PKT_ERROR = 8
-PKT_PARAMETER0 = 8
+PKT_HEADER0             = 0
+PKT_HEADER1             = 1
+PKT_HEADER2             = 2
+PKT_RESERVED            = 3
+PKT_ID                  = 4
+PKT_LENGTH_L            = 5
+PKT_LENGTH_H            = 6
+PKT_INSTRUCTION         = 7
+PKT_ERROR               = 8
+PKT_PARAMETER0          = 8
 
 # Protocol 2.0 Error bit
-ERRNUM_RESULT_FAIL = 1       # Failed to process the instruction packet.
-ERRNUM_INSTRUCTION = 2       # Instruction error
-ERRNUM_CRC = 3       # CRC check error
-ERRNUM_DATA_RANGE = 4       # Data range error
-ERRNUM_DATA_LENGTH = 5       # Data length error
-ERRNUM_DATA_LIMIT = 6       # Data limit error
-ERRNUM_ACCESS = 7       # Access error
+ERRNUM_RESULT_FAIL      = 1       # Failed to process the instruction packet.
+ERRNUM_INSTRUCTION      = 2       # Instruction error
+ERRNUM_CRC              = 3       # CRC check error
+ERRNUM_DATA_RANGE       = 4       # Data range error
+ERRNUM_DATA_LENGTH      = 5       # Data length error
+ERRNUM_DATA_LIMIT       = 6       # Data limit error
+ERRNUM_ACCESS           = 7       # Access error
 
-ERRBIT_ALERT = 128     # When the device has a problem, this bit is set to 1. Check "Device Status Check" value.
+ERRBIT_ALERT            = 128     # When the device has a problem, this bit is set to 1. Check "Device Status Check" value.
 
 class Protocol2PacketHandler(object):
     def getTxRxResult(self, result):
@@ -187,6 +187,8 @@ class Protocol2PacketHandler(object):
         packet[PKT_LENGTH_L] = DXL_LOBYTE(packet_length_out)
         packet[PKT_LENGTH_H] = DXL_HIBYTE(packet_length_out)
 
+        return packet
+
     def removeStuffing(self, packet):
         packet_length_in = DXL_MAKEWORD(packet[PKT_LENGTH_L], packet[PKT_LENGTH_H])
         packet_length_out = packet_length_in
@@ -224,10 +226,6 @@ class Protocol2PacketHandler(object):
         total_packet_length = DXL_MAKEWORD(txpacket[PKT_LENGTH_L], txpacket[PKT_LENGTH_H]) + 7
         # 7: HEADER0 HEADER1 HEADER2 RESERVED ID LENGTH_L LENGTH_H
 
-        # print("txpacket[PKT_LENGTH_L]", txpacket[PKT_LENGTH_L], "txpacket[PKT_LENGTH_H]", txpacket[PKT_LENGTH_H])
-
-        # print("total_packet_length = %d ", total_packet_length)
-
         if total_packet_length > TXPACKET_MAX_LEN:
             port.is_using = False
             return COMM_TX_ERROR
@@ -241,14 +239,8 @@ class Protocol2PacketHandler(object):
         # add CRC16
         crc = self.updateCRC(0, txpacket, total_packet_length - 2) # 2: CRC16
     
-        # print("crc", hex(crc))
-
         txpacket[total_packet_length - 2] = DXL_LOBYTE(crc)
         txpacket[total_packet_length - 1] = DXL_HIBYTE(crc)
-
-        # print("DXL_LOBYTE(crc)", DXL_LOBYTE(crc))
-        # print("txpacket[total_packet_length - 2] : ", txpacket[total_packet_length - 2])
-        # print("txpacket[total_packet_length - 1] : ", txpacket[total_packet_length - 1])
 
         # tx packet
         port.clearPort()
@@ -267,17 +259,7 @@ class Protocol2PacketHandler(object):
 
         while True:
             packet_read = port.readPort(wait_length - rx_length)
-
-            # print("packet_read : ", packet_read)
             rxpacket += packet_read
-
-            # rxpacket = rxpacket + packet_read
-
-            # print("len : ", len(packet_read))
-
-            # print("rxpacket : ", rxpacket)
-
-            # print ("rxpacket ord : ", ord(rxpacket))
 
             rx_length = rx_length + len(packet_read)
             if rx_length >= wait_length:
@@ -285,7 +267,6 @@ class Protocol2PacketHandler(object):
 
                 # find packet header
                 for idx in range(0, (rx_length - 3)):
-                    # print ("rxpacket[idx] :", rxpacket[idx], "rxpacket[idx + 1]", rxpacket[idx + 1], "rxpacket[idx + 2]", rxpacket[idx + 2], "rxpacket[idx + 3]", rxpacket[idx + 3])
                     if (rxpacket[idx] == 0xFF) and (rxpacket[idx + 1] == 0xFF) and (rxpacket[idx + 2] == 0xFD) and (rxpacket[idx + 3] != 0xFD):
                         break
                     
@@ -351,7 +332,7 @@ class Protocol2PacketHandler(object):
         if result == COMM_SUCCESS:
             rxpacket = self.removeStuffing(rxpacket)
 
-        return result, rxpacket
+        return rxpacket, result
 
     # NOT for BulkRead / SyncRead instruction
     def txRxPacket(self, port, txpacket, rxpacket=[], error=0):
@@ -360,7 +341,7 @@ class Protocol2PacketHandler(object):
         # tx packet
         result = self.txPacket(port, txpacket)
         if result != COMM_SUCCESS:
-            return result
+            return rxpacket, result, error
 
         # (Instruction == BulkRead or SyncRead) == this function is not available.
         if txpacket[PKT_INSTRUCTION] == INST_BULK_READ or txpacket[PKT_INSTRUCTION] == INST_SYNC_READ:
@@ -370,7 +351,7 @@ class Protocol2PacketHandler(object):
         # (Instruction == action) == no need to wait for status packet
         if txpacket[PKT_ID] == BROADCAST_ID or txpacket[PKT_INSTRUCTION] == INST_ACTION:
             port.is_using = False
-            return result
+            return rxpacket, result, error
 
         print "finished"
 
@@ -383,21 +364,19 @@ class Protocol2PacketHandler(object):
 
         # rx packet
         while True:
-            result, rxpacket = self.rxPacket(port, rxpacket)
+            rxpacket, result = self.rxPacket(port, rxpacket)
 
             print("result : ", result)
             # print("rxpacket[PKT_ID] : ", rxpacket[PKT_ID])
 
             if result != COMM_SUCCESS or txpacket[PKT_ID] == rxpacket[PKT_ID]:
-                # except (result == COMM_SUCCESS && txpacket[PKT_ID] != rxpacket[PKT_ID])
                 break
 
         if result == COMM_SUCCESS and txpacket[PKT_ID] == rxpacket[PKT_ID]:
-            # (result == COMM_SUCCESS && txpacket[PKT_ID] == rxpacket[PKT_ID])
             if error != 0:
                 error = rxpacket[PKT_ERROR]
 
-        return result, rxpacket, error
+        return rxpacket, result, error
         
     def ping(self, port, id, model_number=0, error=0):
         result = COMM_TX_FAIL
@@ -406,35 +385,137 @@ class Protocol2PacketHandler(object):
         rxpacket = []
 
         if id >= BROADCAST_ID:
-            return COMM_NOT_AVAILABLE
+            return model_number, COMM_NOT_AVAILABLE, error
 
         txpacket[PKT_ID] = id
         txpacket[PKT_LENGTH_L] = 3
         txpacket[PKT_LENGTH_H] = 0
         txpacket[PKT_INSTRUCTION] = INST_PING
 
-        result, rxpacket, error = self.txRxPacket(port, txpacket, rxpacket, error)
+        rxpacket, result, error = self.txRxPacket(port, txpacket, rxpacket, error)
         if result == COMM_SUCCESS:
             model_number = DXL_MAKEWORD(rxpacket[PKT_PARAMETER0 + 1], rxpacket[PKT_PARAMETER0 + 2])
 
         return model_number, result, error
 
-    def broadcastPing(self, port): # id_list
-        pass
+    def broadcastPing(self, port):
+        STATUS_LENGTH   = 14
+        result          = COMM_TX_FAIL
+
+        rx_length       = 0
+        wait_length     = STATUS_LENGTH * MAX_ID
+
+        txpacket        = [0] * 10
+        rxpacket        = []
+
+        txpacket[PKT_ID]            = BROADCAST_ID
+        txpacket[PKT_LENGTH_L]      = 3
+        txpacket[PKT_LENGTH_H]      = 0
+        txpacket[PKT_INSTRUCTION]   = INST_PING
+
+        result = self.txPacket(port, txpacket)
+        if result != COMM_SUCCESS:
+            port.is_using = False
+            return  id_list, result
+
+        # set rx timeout
+        port.setPacketTimeout(wait_length * 30)
+
+        while True:
+            packet_read = port.readPort(wait_length - rx_length)
+            rxpacket += packet_read
+
+            rx_length = rx_length + len(packet_read)
+            
+            if port.isPacketTimeout() == True: # or rx_length >= wait_length
+                break
+
+        
+        port.is_using = False
+
+        if rx_length == 0:
+            return id_list, COMM_RX_TIMEOUT
+
+        while True:
+            if rx_length < STATUS_LENGTH:
+                return id_list, COMM_RX_CORRUPT
+
+            # find packet header
+            for idx in range(0, rx_length - 2):
+                if rxpacket[idx] == 0xFF and rxpacket[idx+1] == 0xFF and rxpacket[idx+2] == 0xFD:
+                    break
+
+            if idx == 0: # found at the beginning of the packet
+                # verify CRC16
+                crc = DXL_MAKEWORD(rxpacket[STATUS_LENGTH-2], rxpacket[STATUS_LENGTH-1])
+
+                if self.updateCRC(0, rxpacket, STATUS_LENGTH - 2) == crc:
+                    result = COMM_SUCCESS
+
+                    id_list.extend(rxpacket[PKT_ID])
+
+                    for s in range(0, rx_length - STATUS_LENGTH):
+                        rxpacket[s] = rxpacket[STATUS_LENGTH + s]
+                    
+                    rx_length = rx_length - STATUS_LENGTH
+
+                    if rx_length == 0:
+                        return id_list, result
+                
+                else:
+                    result = COMM_RX_CORRUPT
+
+                    # remove header (0xFF 0xFF 0xFD)
+                    for s in range(0, rx_length - 3):
+                        rxpacket[s] = rxpacket[3 + s]
+                    rx_length = rx_length - 3
+
+            else:
+                # remove unnecessary packets
+                for s in range(0, rx_length - idx):
+                    rxpacket[s] - rxpacket[idx + s]
+                rx_length = rx_length - idx
+
+        
+        return id_list, result
 
     def action(self, port, id):
-        pass
+        txpacket                    = [0] * 10
+
+        txpacket[PKT_ID]            = id
+        txpacket[PKT_LENGTH_L]      = 3
+        txpacket[PKT_LENGTH_H]      = 0
+        txpacket[PKT_INSTRUCTION]   = INST_ACTION
+
+        return self.txRxPacket(port, txpacket)
 
     def reboot(self, port, id, error=0):
-        pass
+        txpacket                    = [0] * 10
+        rxpacket                    = []
+
+        txpacket[PKT_ID]            = id
+        txpacket[PKT_LENGTH_L]      = 3
+        txpacket[PKT_LENGTH_H]      = 0
+        txpacket[PKT_INSTRUCTION]   = INST_REBOOT
+
+        return self.txRxPacket(port, txpacket, rxpacket, error)
 
     def factoryReset(self, port, id, option, error=0):
-        pass
+        txpacket                    = [0] * 11
+        rxpacket                    = []
+
+        txpacket[PKT_ID]            = id
+        txpacket[PKT_LENGTH_L]      = 4
+        txpacket[PKT_LENGTH_H]      = 0
+        txpacket[PKT_INSTRUCTION]   = INST_FACTORY_RESET
+        txpacket[PKT_PARAMETER0]    = option
+
+        return self.txRxPacket(port, txpacket, rxpacket, error)
 
     def readTx(self, port, id, address, length):
         result                      = COMM_TX_FAIL
 
-        TXPACKET_MAX_LEN            = [0] * 14
+        txpacket                    = [0] * 14
 
         if id >= BROADCAST_ID:
             return COMM_NOT_AVAILABLE
@@ -451,7 +532,7 @@ class Protocol2PacketHandler(object):
         result = self.txPacket(port, txpacket)
 
         # set packet timeout
-        if (result == COMM_SUCCESS)
+        if (result == COMM_SUCCESS):
             port.setPacketTimeout(length + 11)
 
         return result
@@ -462,7 +543,7 @@ class Protocol2PacketHandler(object):
         rxpacket                    = []
 
         while True:
-            result = self.rxPacket(port, rxpacket)
+            rxpacket, result = self.rxPacket(port, rxpacket)
 
             if result != COMM_SUCCESS or rxpacket[PKT_ID] == id:
                 break
@@ -476,7 +557,6 @@ class Protocol2PacketHandler(object):
                 # memcpy(data, &rxpacket[PKT_PARAMETER0+1], length);
         
         del rxpacket[:]; del rxpacket
-
         return data, result, error
 
     def readTxRx(self, port, id, address, length, data=[], error=0):
@@ -484,10 +564,10 @@ class Protocol2PacketHandler(object):
 
         txpacket                    = [0] * 14
         rxpacket                    = []
-        # (length + 11 + (length/3));  // (length/3): consider stuffing
+        # (length + 11 + (length/3));  # (length/3): consider stuffing
 
         if id >= BROADCAST_ID:
-            return COMM_NOT_AVAILABLE
+            return data, COMM_NOT_AVAILABLE, error
 
         txpacket[PKT_ID]            = id
         txpacket[PKT_LENGTH_L]      = 7
@@ -498,7 +578,7 @@ class Protocol2PacketHandler(object):
         txpacket[PKT_PARAMETER0+2]  = DXL_LOBYTE(length)
         txpacket[PKT_PARAMETER0+3]  = DXL_HIBYTE(length)        
 
-        result, rxpacket, error = self.txRxPacket(port, txpacket, rxpacket, error)
+        rxpacket, result, error = self.txRxPacket(port, txpacket, rxpacket, error)
         if result == COMM_SUCCESS:
             if error != 0:
                 error = rxpacket[PKT_ERROR]
@@ -507,7 +587,6 @@ class Protocol2PacketHandler(object):
                 data[s] = rxpacket[PKT_PARAMETER0 + 1 + s]
             
         del rxpacket[:]; del rxpacket
-
         return data, result, error        
 
     def read1ByteTx(self, port, id, address):
@@ -517,7 +596,7 @@ class Protocol2PacketHandler(object):
         data_read, result, error = self.readRx(port, id, 1, data_read, error)
         if result == COMM_SUCCESS:
             data = data_read[0]
-        return result
+        return data, result, error
     def read1ByteTxRx(self, port, id, address, data=[], error=0):
         data_read = [0]
         data_read, result, error = self.readTxRx(port, id, address, 1, data_read, error)
@@ -532,7 +611,7 @@ class Protocol2PacketHandler(object):
         data_read, result, error = self.readRx(port, id, 2, data_read, error)
         if result == COMM_SUCCESS:
             data = DXL_MAKEWORD(data_read[0], data_read[1])        
-        return result
+        return data, result, error
     def read2ByteTxRx(self, port, id, address, data=[], error=0):
         data_read = [0] * 2
         data_read, result, error = self.readTxRx(port, id, address, 2, data_read, error)
@@ -547,7 +626,7 @@ class Protocol2PacketHandler(object):
         data_read, result, error = self.readRx(port, id, 4, data_read, error)
         if result == COMM_SUCCESS:
             data = DXL_MAKEDWORD(DXL_MAKEWORD(data_read[0], data_read[1]), DXL_MAKEWORD(data_read[2], data_read[3]))
-        return result
+        return data, result, error
     def read4ByteTxRx(self, port, id, address, data=[], error=0):
         data_read = [0] * 4
         data_read, result, error = self.readTxRx(port, id, address, 4, data_read, error)
@@ -556,7 +635,7 @@ class Protocol2PacketHandler(object):
         return data, result, error
 
 
-    def writeTxonly(self, port, id, address, length, data):
+    def writeTxOnly(self, port, id, address, length, data):
         result                      = COMM_TX_FAIL
 
         txpacket                    = [0] * (length + 12)
@@ -576,7 +655,6 @@ class Protocol2PacketHandler(object):
         port.is_using = False
 
         del txpacket[:]; del txpacket
-
         return result
 
     def writeTxRx(self, port, id, address, length, data, error=0): 
@@ -596,22 +674,21 @@ class Protocol2PacketHandler(object):
             txpacket[PKT_PARAMETER0+2+s] = data[s]
             # memcpy(&txpacket[PKT_PARAMETER0+2], data, length);
 
-        result, rxpacket, error = self.txRxPacket(port, txpacket, rxpacket, error)
+        rxpacket, result, error = self.txRxPacket(port, txpacket, rxpacket, error)
 
         del txpacket[:]; del txpacket
-
         return result, error
 
     def write1ByteTxOnly(self, port, id, address, data):
         data_write = [data]
-        return self.writeTxonly(port, id, address, 1, data_write)
+        return self.writeTxOnly(port, id, address, 1, data_write)
     def write1ByteTxRx(self, port, id, address, data, error=0):
         data_write = [data]
         return self.writeTxRx(port, id, address, 1, data_write)
 
     def write2ByteTxOnly(self, port, id, address, data):
         data_write = [DXL_LOBYTE(data), DXL_HIBYTE(data)]
-        return self.writeTxonly(port, id, address, 2, data_write)
+        return self.writeTxOnly(port, id, address, 2, data_write)
     def write2ByteTxRx(self, port, id, address, data, error=0):
         data_write = [DXL_LOBYTE(data), DXL_HIBYTE(data)]
         return self.writeTxRx(port, id, address, 2, data_write)
@@ -624,19 +701,142 @@ class Protocol2PacketHandler(object):
         return self.writeTxRx(port, id, address, 4, data_write)
 
     def regWriteTxOnly(self, port, id, address, length, data):
-        pass
+        result                      = COMM_TX_FAIL
+
+        txpacket                    = [0] * (length + 12)
+
+        txpacket[PKT_ID]            = id
+        txpacket[PKT_LENGTH_L]      = DXL_LOBYTE(length+5)
+        txpacket[PKT_LENGTH_H]      = DXL_HIBYTE(length+5)
+        txpacket[PKT_INSTRUCTION]   = INST_REG_WRITE
+        txpacket[PKT_PARAMETER0+0]  = DXL_LOBYTE(address)
+        txpacket[PKT_PARAMETER0+1]  = DXL_HIBYTE(address)
+        
+        for s in range(0, length):
+            txpacket[PKT_PARAMETER0+2+s] = data[s]
+
+        result = self.txPacket(port, txpacket)
+        port.is_using = False
+
+        del txpacket[:]; del txpacket
+        return result
 
     def regWriteTxRx(self, port, id, address, length, data, error=0):
-        pass
+        result                      = COMM_TX_FAIL
+
+        txpacket                    = [0] * (length + 12)
+        rxpacket                    = []
+
+        txpacket[PKT_ID]            = id
+        txpacket[PKT_LENGTH_L]      = DXL_LOBYTE(length+5)
+        txpacket[PKT_LENGTH_H]      = DXL_HIBYTE(length+5)
+        txpacket[PKT_INSTRUCTION]   = INST_REG_WRITE
+        txpacket[PKT_PARAMETER0+0]  = DXL_LOBYTE(address)
+        txpacket[PKT_PARAMETER0+1]  = DXL_HIBYTE(address)        
+
+        for s in range(0, length):
+            txpacket[PKT_PARAMETER0+2+s] = data[s]
+            # memcpy(&txpacket[PKT_PARAMETER0+2], data, length);
+
+        _, result, error = self.txRxPacket(port, txpacket, rxpacket, error)
+
+        del txpacket[:]; del txpacket
+        return result, error
 
     def syncReadTx(self, port, start_address, data_length, param, param_length):
-        pass
+        result                      = COMM_TX_FAIL
+
+        txpacket                    = [0] * (param_length + 14) 
+        # 14: HEADER0 HEADER1 HEADER2 RESERVED ID LEN_L LEN_H INST START_ADDR_L START_ADDR_H DATA_LEN_L DATA_LEN_H CRC16_L CRC16_H
+        
+        txpacket[PKT_ID]            = BROADCAST_ID
+        txpacket[PKT_LENGTH_L]      = DXL_LOBYTE(param_length + 7) # 7: INST START_ADDR_L START_ADDR_H DATA_LEN_L DATA_LEN_H CRC16_L CRC16_H
+        txpacket[PKT_LENGTH_H]      = DXL_HIBYTE(param_length + 7) # 7: INST START_ADDR_L START_ADDR_H DATA_LEN_L DATA_LEN_H CRC16_L CRC16_H
+        txpacket[PKT_INSTRUCTION]   = INST_SYNC_READ
+        txpacket[PKT_PARAMETER0+0]  = DXL_LOBYTE(start_address)
+        txpacket[PKT_PARAMETER0+1]  = DXL_HIBYTE(start_address)
+        txpacket[PKT_PARAMETER0+2]  = DXL_LOBYTE(data_length)
+        txpacket[PKT_PARAMETER0+3]  = DXL_HIBYTE(data_length)
+        
+        for s in range(0, param_length):
+            txpacket[PKT_PARAMETER0+4+s] = param[s]
+            # memcpy(&txpacket[PKT_PARAMETER0+4], param, param_length);
+
+        result = self.txPacket(port, txpacket)
+        if result == COMM_SUCCESS:
+            port.setPacketTimeout((11 + data_length) * param_length)
+
+        del txpacket[:]; del txpacket
+        return param, result
 
     def syncWriteTxOnly(self, port, start_address, data_length, param, param_length):
-        pass
+        result                      = COMM_TX_FAIL
+
+        txpacket                    = [0] * (param_length + 14) 
+        # 14: HEADER0 HEADER1 HEADER2 RESERVED ID LEN_L LEN_H INST START_ADDR_L START_ADDR_H DATA_LEN_L DATA_LEN_H CRC16_L CRC16_H
+
+        txpacket[PKT_ID]            = BROADCAST_ID
+        txpacket[PKT_LENGTH_L]      = DXL_LOBYTE(param_length + 7) # 7: INST START_ADDR_L START_ADDR_H DATA_LEN_L DATA_LEN_H CRC16_L CRC16_H
+        txpacket[PKT_LENGTH_H]      = DXL_HIBYTE(param_length + 7) # 7: INST START_ADDR_L START_ADDR_H DATA_LEN_L DATA_LEN_H CRC16_L CRC16_H
+        txpacket[PKT_INSTRUCTION]   = INST_SYNC_WRITE
+        txpacket[PKT_PARAMETER0+0]  = DXL_LOBYTE(start_address)
+        txpacket[PKT_PARAMETER0+1]  = DXL_HIBYTE(start_address)
+        txpacket[PKT_PARAMETER0+2]  = DXL_LOBYTE(data_length)
+        txpacket[PKT_PARAMETER0+3]  = DXL_HIBYTE(data_length)
+        
+        for s in range(0, param_length):
+            txpacket[PKT_PARAMETER0+4+s] = param[s]
+            # memcpy(&txpacket[PKT_PARAMETER0+4], param, param_length);
+
+        result = self.txRxPacket(port, txpacket)
+
+        del txpacket[:]; del txpacket
+        return result
 
     def bulkReadTx(self, port, param, param_length):
-        pass
+        result                      = COMM_TX_FAIL
+
+        txpacket                    = [0] * (param_length + 10)
+        # 10: HEADER0 HEADER1 HEADER2 RESERVED ID LEN_L LEN_H INST CRC16_L CRC16_H
+
+        txpacket[PKT_ID]            = BROADCAST_ID
+        txpacket[PKT_LENGTH_L]      = DXL_LOBYTE(param_length + 3) # 3: INST CRC16_L CRC16_H
+        txpacket[PKT_LENGTH_H]      = DXL_HIBYTE(param_length + 3) # 3: INST CRC16_L CRC16_H
+        txpacket[PKT_INSTRUCTION]   = INST_BULK_READ
+
+        for s in range(0, param_length)
+            txpacket[PKT_PARAMETER0+s] = param[s]
+            #memcpy(&txpacket[PKT_PARAMETER0], param, param_length);
+
+        result = self.txPacket(port, txpacket)
+
+        if result == COMM_SUCCESS:
+            wait_length = 0
+            i = 0
+            while i < param_length:
+                wait_length = wait_length + DXL_MAKEWORD(param[i+3], param[i+4]) + 10
+                i = i + 5
+            port.setPacketTimeout(wait_length)
+
+        del txpacket[:]; del txpacket
+        return result
 
     def bulkWriteTxOnly(self, port, param, param_length):
-        pass
+        result                  = COMM_TX_FAIL
+
+        txpacket                = [0] * (param_length + 10)
+        # 10: HEADER0 HEADER1 HEADER2 RESERVED ID LEN_L LEN_H INST CRC16_L CRC16_H
+
+        txpacket[PKT_ID]            = BROADCAST_ID
+        txpacket[PKT_LENGTH_L]      = DXL_LOBYTE(param_length + 3) # 3: INST CRC16_L CRC16_H
+        txpacket[PKT_LENGTH_H]      = DXL_HIBYTE(param_length + 3) # 3: INST CRC16_L CRC16_H
+        txpacket[PKT_INSTRUCTION]   = INST_BULK_WRITE
+
+        for s in range(0, param_length):
+            txpacket[PKT_PARAMETER0+s] = param[s]
+            # memcpy(&txpacket[PKT_PARAMETER0], param, param_length);
+
+        result = self.txRxPacket(port, txpacket)
+
+        del txpacket[:]; del txpacket
+        return result
