@@ -54,7 +54,7 @@ PROTOCOL_VERSION        = 2.0               # See which protocol version is used
 
 # Default setting
 BAUDRATE                = 57600             # Dynamixel default baudrate : 57600
-DEVICENAME              = '/dev/ttyUSB0'    # Check which port is being used on your controller
+DEVICENAME              = '/dev/ttyUSB1'    # Check which port is being used on your controller
                                             # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
 
 # Initialize PortHandler instance
@@ -92,8 +92,8 @@ if dxl_comm_result != COMM_SUCCESS:
     print packetHandler.getTxRxResult(dxl_comm_result)
 
 print "Detected Dynamixel :"
-for dxl in dxl_data_list:
-    print "[ID:%03d] model version : %d | firmware version : %d" % (dxl[0], dxl[1], dxl[2]) 
+for dxl_id in dxl_data_list:
+    print "[ID:%03d] model version : %d | firmware version : %d" % (dxl_id, dxl_data_list.get(dxl_id)[0], dxl_data_list.get(dxl_id)[1]) 
 
 # Close port
 portHandler.closePort()

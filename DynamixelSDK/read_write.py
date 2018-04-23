@@ -56,7 +56,7 @@ ADDR_PRO_GOAL_POSITION      = 116
 ADDR_PRO_PRESENT_POSITION   = 132
 
 # Protocol version
-PROTOCOL_VERSION            = 2.0               #  See which protocol version is used in the Dynamixel
+PROTOCOL_VERSION            = 2.0               # See which protocol version is used in the Dynamixel
 
 # Default setting
 DXL_ID                      = 1                 # Dynamixel ID : 1

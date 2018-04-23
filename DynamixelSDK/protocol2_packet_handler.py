@@ -394,7 +394,7 @@ class Protocol2PacketHandler(object):
 
         return model_number, result, error
 
-    def broadcastPing(self, port, data_list=[]):
+    def broadcastPing(self, port, data_list={}):
         STATUS_LENGTH   = 14
         result          = COMM_TX_FAIL
 
@@ -446,7 +446,7 @@ class Protocol2PacketHandler(object):
                 if self.updateCRC(0, rxpacket, STATUS_LENGTH - 2) == crc:
                     result = COMM_SUCCESS
 
-                    data_list.append([rxpacket[PKT_ID], DXL_MAKEWORD(rxpacket[PKT_PARAMETER0 + 1], rxpacket[PKT_PARAMETER0 + 2]), rxpacket[PKT_PARAMETER0 + 3]])
+                    data_list[rxpacket[PKT_ID]] = [DXL_MAKEWORD(rxpacket[PKT_PARAMETER0 + 1], rxpacket[PKT_PARAMETER0 + 2]), rxpacket[PKT_PARAMETER0 + 3]]
 
                     for s in range(0, rx_length - STATUS_LENGTH):
                         rxpacket[s] = rxpacket[STATUS_LENGTH + s]
