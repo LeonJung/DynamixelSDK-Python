@@ -46,8 +46,7 @@ else:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
 
-from port_handler import *
-from packet_handler import * 
+from dynamixel_sdk import *                    # Uses Dynamixel SDK library
 
 # Control table address
 ADDR_PRO_TORQUE_ENABLE      = 64               # Control table address is different in Dynamixel model
@@ -66,7 +65,7 @@ DEVICENAME2                 = '/dev/ttyUSB1'    # ex) Windows: "COM1"   Linux: "
 
 TORQUE_ENABLE               = 1                 # Value for enabling the torque
 TORQUE_DISABLE              = 0                 # Value for disabling the torque
-DXL_MINIMUM_POSITION_VALUE  = 10           # Dynamixel will rotate between this value
+DXL_MINIMUM_POSITION_VALUE  = 100           # Dynamixel will rotate between this value
 DXL_MAXIMUM_POSITION_VALUE  = 4000            # and this value (note that the Dynamixel would not move when the position value is out of movable range. Check e-manual about the range of the Dynamixel you use.)
 DXL_MOVING_STATUS_THRESHOLD = 20                # Dynamixel moving status threshold
 
@@ -176,7 +175,7 @@ while 1:
 
         print "[ID:%03d] GoalPos:%03d  PresPos:%03d\t[ID:%03d] GoalPos:%03d  PresPos:%03d" % (DXL1_ID, dxl_goal_position[index], dxl1_present_position, DXL2_ID, dxl_goal_position[index], dxl2_present_position)
 
-        if not (abs(dxl_goal_position[index] - dxl1_present_position) > DXL_MOVING_STATUS_THRESHOLD) and (abs(dxl_goal_position[index] - dxl2_present_position) > DXL_MOVING_STATUS_THRESHOLD):
+        if not ((abs(dxl_goal_position[index] - dxl1_present_position) > DXL_MOVING_STATUS_THRESHOLD) and (abs(dxl_goal_position[index] - dxl2_present_position) > DXL_MOVING_STATUS_THRESHOLD)):
             break
 
     # Change goal position

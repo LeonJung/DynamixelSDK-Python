@@ -46,8 +46,7 @@ else:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
 
-from port_handler import *
-from packet_handler import * 
+from dynamixel_sdk import *                 # Uses Dynamixel SDK library
 
 # Protocol version
 PROTOCOL_VERSION        = 2.0               # See which protocol version is used in the Dynamixel
@@ -87,31 +86,20 @@ else:
     getch()
     quit()
 
-# # Trigger
-# print "Press any key to reboot"
-# getch()
+# Trigger
+print "Press any key to reboot"
+getch()
 
-# print "See the Dynamixel LED flickering"
-# # Try reboot
-# # Dynamixel LED will flicker while it reboots
-# dxl_comm_result, dxl_error = packetHandler.reboot(portHandler, DXL_ID)
-# if dxl_comm_result != COMM_SUCCESS:
-#     print(packetHandler.getTxRxResult(dxl_comm_result))
-# elif dxl_error != 0:
-#     print(packetHandler.getRxPacketError(dxl_error))
+print "See the Dynamixel LED flickering"
+# Try reboot
+# Dynamixel LED will flicker while it reboots
+dxl_comm_result, dxl_error = packetHandler.reboot(portHandler, DXL_ID)
+if dxl_comm_result != COMM_SUCCESS:
+    print(packetHandler.getTxRxResult(dxl_comm_result))
+elif dxl_error != 0:
+    print(packetHandler.getRxPacketError(dxl_error))
 
-# print "[ID:%03d] reboot Succeeded\n" % DXL_ID
-
-
-# id_list = {}
-
-# print id_list
-
-id_list = {1:'a'}
-
-print id_list
-
-print id_list[1]
+print "[ID:%03d] reboot Succeeded\n" % DXL_ID
 
 
 # Close port

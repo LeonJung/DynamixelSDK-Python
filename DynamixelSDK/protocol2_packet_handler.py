@@ -48,6 +48,9 @@ ERRNUM_ACCESS           = 7       # Access error
 ERRBIT_ALERT            = 128     # When the device has a problem, this bit is set to 1. Check "Device Status Check" value.
 
 class Protocol2PacketHandler(object):
+    def getProtocolVersion(self):
+        return 2.0
+
     def getTxRxResult(self, result):
         if result == COMM_SUCCESS:
             return "[TxRxResult] Communication success!"
@@ -754,7 +757,7 @@ class Protocol2PacketHandler(object):
         txpacket[PKT_PARAMETER0+1]  = DXL_HIBYTE(start_address)
         txpacket[PKT_PARAMETER0+2]  = DXL_LOBYTE(data_length)
         txpacket[PKT_PARAMETER0+3]  = DXL_HIBYTE(data_length)
-        
+
         for s in range(0, param_length):
             txpacket[PKT_PARAMETER0+4+s] = param[s]
             # memcpy(&txpacket[PKT_PARAMETER0+4], param, param_length);
@@ -764,7 +767,7 @@ class Protocol2PacketHandler(object):
             port.setPacketTimeout((11 + data_length) * param_length)
 
         del txpacket[:]; del txpacket
-        return param, result
+        return result
 
     def syncWriteTxOnly(self, port, start_address, data_length, param, param_length):
         result                      = COMM_TX_FAIL

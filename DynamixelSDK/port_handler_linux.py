@@ -75,7 +75,7 @@ class PortHandlerLinux(object):
         # read_bytes = self.ser.read(length)
         read_bytes = []
 
-        read_bytes.extend([ord(ch) for ch in self.ser.read(length)])  
+        read_bytes.extend([ord(ch) for ch in self.ser.read(length)])
         # for i in range(0, len(read_bytes)):
         #     read_bytes[i] = int.frombytes(read_bytes[i], byteorder = 'little')
 
