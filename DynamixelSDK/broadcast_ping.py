@@ -20,12 +20,11 @@
 # Author: Ryu Woon Jung (Leon)
 
 #
-# *********     ping Example      *********
+# *********     broadcastPing Example      *********
 #
 #
 # Available Dynamixel model on this example : All models using Protocol 2.0
-# This example is designed for using a Dynamixel PRO 54-200, and an USB2DYNAMIXEL.
-# To use another Dynamixel model, such as X series, see their details in E-Manual(support.robotis.com) and edit below variables yourself.
+# This example is tested with two Dynamixel PRO 54-200, and an USB2DYNAMIXEL
 # Be sure that Dynamixel PRO properties are already set as %% ID : 1 / Baudnum : 1 (Baudrate : 57600)
 #
 
@@ -54,7 +53,6 @@ from packet_handler import *
 PROTOCOL_VERSION        = 2.0               # See which protocol version is used in the Dynamixel
 
 # Default setting
-DXL_ID                  = 1                 # Dynamixel ID : 1
 BAUDRATE                = 57600             # Dynamixel default baudrate : 57600
 DEVICENAME              = '/dev/ttyUSB0'    # Check which port is being used on your controller
                                             # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
@@ -88,15 +86,14 @@ else:
     getch()
     quit()
 
-# Try to ping the Dynamixel
-# Get Dynamixel model number
-dxl_model_number, dxl_comm_result, dxl_error = packetHandler.ping(portHandler, DXL_ID)
+# Try to broadcast ping the Dynamixel
+dxl_data_list, dxl_comm_result = packetHandler.broadcastPing(portHandler)
 if dxl_comm_result != COMM_SUCCESS:
     print packetHandler.getTxRxResult(dxl_comm_result)
-elif dxl_error != 0:
-    print packetHandler.getRxPacketError(dxl_error)
-else:
-    print "[ID:%03d] ping Succeeded. Dynamixel model number : %d" % (DXL_ID, dxl_model_number)
+
+print "Detected Dynamixel :"
+for dxl in dxl_data_list:
+    print "[ID:%03d] model version : %d | firmware version : %d" % (dxl[0], dxl[1], dxl[2]) 
 
 # Close port
 portHandler.closePort()

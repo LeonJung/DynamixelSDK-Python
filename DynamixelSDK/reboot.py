@@ -20,12 +20,11 @@
 # Author: Ryu Woon Jung (Leon)
 
 #
-# *********     ping Example      *********
+# *********     reboot Example      *********
 #
 #
 # Available Dynamixel model on this example : All models using Protocol 2.0
-# This example is designed for using a Dynamixel PRO 54-200, and an USB2DYNAMIXEL.
-# To use another Dynamixel model, such as X series, see their details in E-Manual(support.robotis.com) and edit below variables yourself.
+# This example is tested with a Dynamixel PRO 54-200, and USB2DYNAMIXEL
 # Be sure that Dynamixel PRO properties are already set as %% ID : 1 / Baudnum : 1 (Baudrate : 57600)
 #
 
@@ -88,15 +87,20 @@ else:
     getch()
     quit()
 
-# Try to ping the Dynamixel
-# Get Dynamixel model number
-dxl_model_number, dxl_comm_result, dxl_error = packetHandler.ping(portHandler, DXL_ID)
+# Trigger
+print "Press any key to reboot"
+getch()
+
+print "See the Dynamixel LED flickering"
+# Try reboot
+# Dynamixel LED will flicker while it reboots
+dxl_comm_result, dxl_error = packetHandler.reboot(portHandler, DXL_ID)
 if dxl_comm_result != COMM_SUCCESS:
-    print packetHandler.getTxRxResult(dxl_comm_result)
+    print(packetHandler.getTxRxResult(dxl_comm_result))
 elif dxl_error != 0:
-    print packetHandler.getRxPacketError(dxl_error)
-else:
-    print "[ID:%03d] ping Succeeded. Dynamixel model number : %d" % (DXL_ID, dxl_model_number)
+    print(packetHandler.getRxPacketError(dxl_error))
+
+print "[ID:%03d] reboot Succeeded\n" % DXL_ID
 
 # Close port
 portHandler.closePort()

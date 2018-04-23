@@ -152,10 +152,10 @@ class Protocol2PacketHandler(object):
         return crc_accum
 
     def addStuffing(self, packet):
-        packet_length_in = DXL_MAKEWORD(packet[PKT_LENGTH_L], packet[PKT_LENGTH_H])
-        packet_length_out = packet_length_in
+        packet_length_in    = DXL_MAKEWORD(packet[PKT_LENGTH_L], packet[PKT_LENGTH_H])
+        packet_length_out   = packet_length_in
 
-        temp = [0] * TXPACKET_MAX_LEN
+        temp                = [0] * TXPACKET_MAX_LEN
 
         for s in range(PKT_HEADER0, PKT_LENGTH_H + 1):
             temp[s] = packet[s] # FF FF FD XX ID LEN_L LEN_H
@@ -298,10 +298,6 @@ class Protocol2PacketHandler(object):
                     
                     crc = DXL_MAKEWORD(rxpacket[wait_length-2], rxpacket[wait_length-1])
 
-                    crc2 = self.updateCRC(0, rxpacket, wait_length - 2)
-
-                    print("crc :", crc, "/ crc2 :", crc2)
-
                     if self.updateCRC(0, rxpacket, wait_length - 2) == crc:
                         result = COMM_SUCCESS
                     else:
@@ -398,7 +394,7 @@ class Protocol2PacketHandler(object):
 
         return model_number, result, error
 
-    def broadcastPing(self, port):
+    def broadcastPing(self, port, data_list=[]):
         STATUS_LENGTH   = 14
         result          = COMM_TX_FAIL
 
@@ -416,29 +412,27 @@ class Protocol2PacketHandler(object):
         result = self.txPacket(port, txpacket)
         if result != COMM_SUCCESS:
             port.is_using = False
-            return  id_list, result
+            return data_list, result
 
         # set rx timeout
-        port.setPacketTimeout(wait_length * 30)
+        port.setPacketTimeout(wait_length * 1)
 
         while True:
             packet_read = port.readPort(wait_length - rx_length)
             rxpacket += packet_read
 
             rx_length = rx_length + len(packet_read)
-            
             if port.isPacketTimeout() == True: # or rx_length >= wait_length
                 break
 
-        
         port.is_using = False
 
         if rx_length == 0:
-            return id_list, COMM_RX_TIMEOUT
+            return data_list, COMM_RX_TIMEOUT
 
         while True:
             if rx_length < STATUS_LENGTH:
-                return id_list, COMM_RX_CORRUPT
+                return data_list, COMM_RX_CORRUPT
 
             # find packet header
             for idx in range(0, rx_length - 2):
@@ -452,7 +446,7 @@ class Protocol2PacketHandler(object):
                 if self.updateCRC(0, rxpacket, STATUS_LENGTH - 2) == crc:
                     result = COMM_SUCCESS
 
-                    id_list.extend(rxpacket[PKT_ID])
+                    data_list.append([rxpacket[PKT_ID], DXL_MAKEWORD(rxpacket[PKT_PARAMETER0 + 1], rxpacket[PKT_PARAMETER0 + 2]), rxpacket[PKT_PARAMETER0 + 3]])
 
                     for s in range(0, rx_length - STATUS_LENGTH):
                         rxpacket[s] = rxpacket[STATUS_LENGTH + s]
@@ -460,7 +454,7 @@ class Protocol2PacketHandler(object):
                     rx_length = rx_length - STATUS_LENGTH
 
                     if rx_length == 0:
-                        return id_list, result
+                        return data_list, result
                 
                 else:
                     result = COMM_RX_CORRUPT
@@ -475,9 +469,8 @@ class Protocol2PacketHandler(object):
                 for s in range(0, rx_length - idx):
                     rxpacket[s] - rxpacket[idx + s]
                 rx_length = rx_length - idx
-
         
-        return id_list, result
+        return data_list, result
 
     def action(self, port, id):
         txpacket                    = [0] * 10
@@ -487,7 +480,9 @@ class Protocol2PacketHandler(object):
         txpacket[PKT_LENGTH_H]      = 0
         txpacket[PKT_INSTRUCTION]   = INST_ACTION
 
-        return self.txRxPacket(port, txpacket)
+        _, result, _ = self.txRxPacket(port, txpacket)
+
+        return result
 
     def reboot(self, port, id, error=0):
         txpacket                    = [0] * 10
@@ -498,7 +493,8 @@ class Protocol2PacketHandler(object):
         txpacket[PKT_LENGTH_H]      = 0
         txpacket[PKT_INSTRUCTION]   = INST_REBOOT
 
-        return self.txRxPacket(port, txpacket, rxpacket, error)
+        rxpacket, result, error = self.txRxPacket(port, txpacket, rxpacket, error)
+        return result, error
 
     def factoryReset(self, port, id, option, error=0):
         txpacket                    = [0] * 11
@@ -510,7 +506,8 @@ class Protocol2PacketHandler(object):
         txpacket[PKT_INSTRUCTION]   = INST_FACTORY_RESET
         txpacket[PKT_PARAMETER0]    = option
 
-        return self.txRxPacket(port, txpacket, rxpacket, error)
+        rxpacket, result, error = self.txRxPacket(port, txpacket, rxpacket, error)
+        return result, error
 
     def readTx(self, port, id, address, length):
         result                      = COMM_TX_FAIL
@@ -804,7 +801,7 @@ class Protocol2PacketHandler(object):
         txpacket[PKT_LENGTH_H]      = DXL_HIBYTE(param_length + 3) # 3: INST CRC16_L CRC16_H
         txpacket[PKT_INSTRUCTION]   = INST_BULK_READ
 
-        for s in range(0, param_length)
+        for s in range(0, param_length):
             txpacket[PKT_PARAMETER0+s] = param[s]
             #memcpy(&txpacket[PKT_PARAMETER0], param, param_length);
 
