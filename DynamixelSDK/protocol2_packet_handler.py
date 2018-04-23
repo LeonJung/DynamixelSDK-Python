@@ -352,7 +352,7 @@ class Protocol2PacketHandler(object):
             port.is_using = False
             return rxpacket, result, error
 
-        print "finished"
+        # print "finished"
 
         # set packet timeout
         if (txpacket[PKT_INSTRUCTION] == INST_READ):
@@ -365,7 +365,7 @@ class Protocol2PacketHandler(object):
         while True:
             rxpacket, result = self.rxPacket(port, rxpacket)
 
-            print("result : ", result)
+            # print("result : ", result)
             # print("rxpacket[PKT_ID] : ", rxpacket[PKT_ID])
 
             if result != COMM_SUCCESS or txpacket[PKT_ID] == rxpacket[PKT_ID]:
@@ -692,6 +692,7 @@ class Protocol2PacketHandler(object):
     def write2ByteTxRx(self, port, id, address, data, error=0):
         data_write = [DXL_LOBYTE(data), DXL_HIBYTE(data)]
         return self.writeTxRx(port, id, address, 2, data_write)
+
 
     def write4ByteTxOnly(self, port, id, address, data):
         data_write = [DXL_LOBYTE(DXL_LOWORD(data)), DXL_HIBYTE(DXL_LOWORD(data)), DXL_LOBYTE(DXL_HIWORD(data)), DXL_HIBYTE(DXL_HIWORD(data))]

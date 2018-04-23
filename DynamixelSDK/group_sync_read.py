@@ -55,7 +55,7 @@ class GroupSyncRead:
         
         self.data_list[id] = [0] * self.data_length
         
-        print self.data_list
+        # print self.data_list
 
         self.is_param_changed = True
         return True
@@ -69,7 +69,7 @@ class GroupSyncRead:
         
         del self.data_list[id]
 
-        print self.data_list
+        # print self.data_list
 
         self.is_param_changed = True
     
@@ -79,7 +79,7 @@ class GroupSyncRead:
 
         self.data_list.clear()
 
-        print self.data_list
+        # print self.data_list
         return
 
     def txPacket(self):
