@@ -87,7 +87,7 @@ portHandler = PortHandler(DEVICENAME)
 # Initialize PacketHandler instance
 # Set the protocol version
 # Get methods and members of Protocol1PacketHandler or Protocol2PacketHandler
-packetHandler = PacketHandler().getPacketHandler(PROTOCOL_VERSION)
+packetHandler = PacketHandler(PROTOCOL_VERSION)
 
 # Initialize GroupBulkWrite instance
 groupBulkWrite = GroupBulkWrite(portHandler, packetHandler)

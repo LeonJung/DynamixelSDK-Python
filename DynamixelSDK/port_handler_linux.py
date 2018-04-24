@@ -22,7 +22,7 @@
 import time
 import serial
 
-LATENCY_TIMER = 16
+LATENCY_TIMER = 4 #16
 DEFAULT_BAUDRATE = 1000000
 
 class PortHandlerLinux(object):

@@ -82,7 +82,7 @@ portHandler2 = PortHandler(DEVICENAME2)
 # Initialize PacketHandler instance
 # Set the protocol version
 # Get methods and members of Protocol1PacketHandler or Protocol2PacketHandler
-packetHandler = PacketHandler().getPacketHandler(PROTOCOL_VERSION)
+packetHandler = PacketHandler(PROTOCOL_VERSION)
 
 # Open port1
 if portHandler1.openPort():

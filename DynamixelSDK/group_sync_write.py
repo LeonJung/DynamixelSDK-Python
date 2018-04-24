@@ -30,72 +30,63 @@ class GroupSyncWrite:
 
         self.is_param_changed = False
         self.param = []
-        self.data_list = {}
+        self.data_dict = {}
 
         self.clearParam()
 
     def makeParam(self):
-        if not self.data_list:
+        if not self.data_dict:
             return
 
-        self.param = [0] * (len(self.data_list.keys()) * (1 + self.data_length)) # ID(1) + DATA(data_length)
+        self.param = []
 
-        idx = 0
-        for id in self.data_list:
-            if not self.data_list[id]:
+        for id in self.data_dict:
+            if not self.data_dict[id]:
                 return
 
-            self.param[idx] = id
-            idx = idx + 1
-            for c in range(0, self.data_length):
-                self.param[idx] = self.data_list[id][c]
-                idx = idx + 1
-
-        # print self.param
+            self.param.append(id)
+            self.param.extend(self.data_dict[id])
 
     def addParam(self, id, data):
-        if id in self.data_list: # id already exist
+        if (id in self.data_dict): # id already exist
             return False
         
-        self.data_list[id] = data
-        
-        # print self.data_list
+        if len(data) > self.data_length: # input data is longer than set
+            return False
+
+        self.data_dict[id] = data
 
         self.is_param_changed = True
         return True
 
     def removeParam(self, id):
-        if not id in self.data_list: # NOT exist
+        if not id in self.data_dict: # NOT exist
             return
         
-        del self.data_list[id]
-
-        # print self.data_list
+        del self.data_dict[id]
 
         self.is_param_changed = True
     
     def changeParam(self, id, data):
-        if not id in self.data_list: # NOT exist
+        if not id in self.data_dict: # NOT exist
             return False
 
-        self.data_list[id] = data
+        if len(data) > self.data_length: # input data is longer than set
+            return False
 
-        # print self.data_list
+        self.data_dict[id] = data
 
         self.is_param_changed = True
         return True
 
     def clearParam(self):
-        self.data_list.clear()
-
-        # print self.data_list
-        return
+        self.data_dict.clear()
 
     def txPacket(self):
-        if len(self.data_list.keys()) == 0:
+        if len(self.data_dict.keys()) == 0:
             return COMM_NOT_AVAILABLE
         
-        if self.is_param_changed == True or len(param) == 0:
+        if self.is_param_changed == True or not self.param:
             self.makeParam()
 
-        return self.ph.syncWriteTxOnly(self.port, self.start_address, self.data_length, self.param, len(self.data_list.keys()) * (1 + self.data_length))
+        return self.ph.syncWriteTxOnly(self.port, self.start_address, self.data_length, self.param, len(self.data_dict.keys()) * (1 + self.data_length))

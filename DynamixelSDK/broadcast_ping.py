@@ -53,7 +53,7 @@ PROTOCOL_VERSION        = 2.0               # See which protocol version is used
 
 # Default setting
 BAUDRATE                = 57600             # Dynamixel default baudrate : 57600
-DEVICENAME              = '/dev/ttyUSB1'    # Check which port is being used on your controller
+DEVICENAME              = '/dev/ttyUSB0'    # Check which port is being used on your controller
                                             # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
 
 # Initialize PortHandler instance
@@ -64,7 +64,7 @@ portHandler = PortHandler(DEVICENAME)
 # Initialize PacketHandler instance
 # Set the protocol version
 # Get methods and members of Protocol1PacketHandler or Protocol2PacketHandler
-packetHandler = PacketHandler().getPacketHandler(PROTOCOL_VERSION)
+packetHandler = PacketHandler(PROTOCOL_VERSION)
 
 # Open port
 if portHandler.openPort():

@@ -34,6 +34,7 @@
 
 
 import os
+from time import sleep
 
 if os.name == 'nt':
     import msvcrt
@@ -66,7 +67,7 @@ DEVICENAME                  = '/dev/ttyUSB0'    # Check which port is being used
                                                 # ex) Windows: "COM1"   Linux: "/dev/ttyUSB0" Mac: "/dev/tty.usbserial-*"
 
 FACTORYRST_DEFAULTBAUDRATE  = 57600             # Dynamixel baudrate set by factoryreset
-NEW_BAUDNUM                 = 3                 # New baudnum to recover Dynamixel baudrate as it was
+NEW_BAUDNUM                 = 1                 # New baudnum to recover Dynamixel baudrate as it was
 OPERATION_MODE              = 0x01              # 0xFF : reset all values
                                                 # 0x01 : reset all values except ID
                                                 # 0x02 : reset all values except ID and baudrate
@@ -79,7 +80,7 @@ portHandler = PortHandler(DEVICENAME)
 # Initialize PacketHandler instance
 # Set the protocol version
 # Get methods and members of Protocol1PacketHandler or Protocol2PacketHandler
-packetHandler = PacketHandler().getPacketHandler(PROTOCOL_VERSION)
+packetHandler = PacketHandler(PROTOCOL_VERSION)
 
 # Open port
 if portHandler.openPort():
@@ -100,156 +101,70 @@ else:
     getch()
     quit()
 
+# Read present baudrate of the controller
+print "Now the controller baudrate is : %d" % portHandler.getBaudRate()
+
+# Try factoryreset
+print "[ID:%03d] Try factoryreset : " % DXL_ID
+
+dxl_comm_result, dxl_error = packetHandler.factoryReset(portHandler, DXL_ID, OPERATION_MODE)
+if dxl_comm_result != COMM_SUCCESS:
+    print "Aborted"
+    print packetHandler.getTxRxResult(dxl_comm_result)
+    quit()
+elif dxl_error != 0:
+    print packetHandler.getRxPacketError(dxl_error)
+
+# Wait for reset
+print "Wait for reset..."
+sleep(2.0)
+print "[ID:%03d] factoryReset Success!" % DXL_ID
+
+# Set controller baudrate to Dynamixel default baudrate
+if portHandler.setBaudRate(FACTORYRST_DEFAULTBAUDRATE):
+    print "Succeeded to change the controller baudrate to : %d" % FACTORYRST_DEFAULTBAUDRATE
+else:
+    print "Failed to change the controller baudrate"
+    print "Press any key to terminate..."    
+    quit()
 
 
-
-
-
-
-
-
-
-
-
-  // Read present baudrate of the controller
-  printf("Now the controller baudrate is : %d\n", portHandler->getBaudRate());
-
-  // Try factoryreset
-  printf("[ID:%03d] Try factoryreset : ", DXL_ID);
-  dxl_comm_result = packetHandler->factoryReset(portHandler, DXL_ID, OPERATION_MODE, &dxl_error);
-  if (dxl_comm_result != COMM_SUCCESS)
-  {
-    printf("Aborted\n");
-    printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-    return 0;
-  }
-  else if (dxl_error != 0)
-  {
-    printf("%s\n", packetHandler->getRxPacketError(dxl_error));
-  }
-  
-  // Wait for reset
-  printf("Wait for reset...\n");
-  msecSleep(2000);
-
-  printf("[ID:%03d] factoryReset Success!\n", DXL_ID);
-
-  // Set controller baudrate to Dynamixel default baudrate
-  if (portHandler->setBaudRate(FACTORYRST_DEFAULTBAUDRATE))
-  {
-    printf("Succeed to change the controller baudrate to : %d\n", FACTORYRST_DEFAULTBAUDRATE);
-  }
-  else
-  {
-    printf("Failed to change the controller baudrate\n");
-    printf("Press any key to terminate...\n");
-    getch();
-    return 0;
-  }
-
-  // Read Dynamixel baudnum
-  dxl_comm_result = packetHandler->read1ByteTxRx(portHandler, DXL_ID, ADDR_PRO_BAUDRATE, &dxl_baudnum_read, &dxl_error);
-  if (dxl_comm_result != COMM_SUCCESS)
-  {
-    printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-  }
-  else if (dxl_error != 0)
-  {
-    printf("%s\n", packetHandler->getRxPacketError(dxl_error));
-  }
-  else
-  {
-    printf("[ID:%03d] DXL baudnum is now : %d\n", DXL_ID, dxl_baudnum_read);
-  }
-
-  // Write new baudnum
-  dxl_comm_result = packetHandler->write1ByteTxRx(portHandler, DXL_ID, ADDR_PRO_BAUDRATE, NEW_BAUDNUM, &dxl_error);
-  if (dxl_comm_result != COMM_SUCCESS)
-  {
-    printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-  }
-  else if (dxl_error != 0)
-  {
-    printf("%s\n", packetHandler->getRxPacketError(dxl_error));
-  }
-  else
-  {
-    printf("[ID:%03d] Set Dynamixel baudnum to : %d\n", DXL_ID, NEW_BAUDNUM);
-  }
-
-  // Set port baudrate to BAUDRATE
-  if (portHandler->setBaudRate(BAUDRATE))
-  {
-    printf("Succeed to change the controller baudrate to : %d\n", BAUDRATE);
-  }
-  else
-  {
-    printf("Failed to change the controller baudrate\n");
-    printf("Press any key to terminate...\n");
-    getch();
-    return 0;
-  }
-
-  msecSleep(200);
-
-  // Read Dynamixel baudnum
-  dxl_comm_result = packetHandler->read1ByteTxRx(portHandler, DXL_ID, ADDR_PRO_BAUDRATE, &dxl_baudnum_read, &dxl_error);
-  if (dxl_comm_result != COMM_SUCCESS)
-  {
-    printf("%s\n", packetHandler->getTxRxResult(dxl_comm_result));
-  }
-  else if (dxl_error != 0)
-  {
-    printf("%s\n", packetHandler->getRxPacketError(dxl_error));
-  }
-  else
-  {
-    printf("[ID:%03d] Dynamixel Baudnum is now : %d\n", DXL_ID, dxl_baudnum_read);
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Try to ping the Dynamixel
-# Get Dynamixel model number
-dxl_model_number, dxl_comm_result, dxl_error = packetHandler.ping(portHandler, DXL_ID)
+# Read Dynamixel baudnum
+dxl_baudnum_read, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL_ID, ADDR_PRO_BAUDRATE)
 if dxl_comm_result != COMM_SUCCESS:
     print packetHandler.getTxRxResult(dxl_comm_result)
 elif dxl_error != 0:
     print packetHandler.getRxPacketError(dxl_error)
 else:
-    print "[ID:%03d] ping Succeeded. Dynamixel model number : %d" % (DXL_ID, dxl_model_number)
+    print "[ID:%03d] DXL baudnum is now : %d" % (DXL_ID, dxl_baudnum_read)
 
+# Write new baudnum
+dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_PRO_BAUDRATE, NEW_BAUDNUM)
+if dxl_comm_result != COMM_SUCCESS:
+    print packetHandler.getTxRxResult(dxl_comm_result)
+elif dxl_error != 0:
+    print packetHandler.getRxPacketError(dxl_error)
+else:
+    print "[ID:%03d] Set Dynamixel baudnum to : %d" % (DXL_ID, NEW_BAUDNUM)
 
+# Set port baudrate to BAUDRATE
+if portHandler.setBaudRate(BAUDRATE):
+    print "Succeeded to change the controller baudrate to : %d" % BAUDRATE
+else:
+    print "Failed to change the controller baudrate"
+    print "Press any key to terminate..."
+    quit()
 
+sleep(0.2)
 
-
-
-
-
-
-
-
-
+# Read Dynamixel baudnum
+dxl_baudnum_read, dxl_comm_result, dxl_error = packetHandler.read1ByteTxRx(portHandler, DXL_ID, ADDR_PRO_BAUDRATE)
+if dxl_comm_result != COMM_SUCCESS:
+    print packetHandler.getTxRxResult(dxl_comm_result)
+elif dxl_error != 0:
+    print packetHandler.getRxPacketError(dxl_error)
+else:
+    print "[ID:%03d] Dynamixel Baudnum is now : %d" % (DXL_ID, dxl_baudnum_read)
 
 # Close port
 portHandler.closePort()

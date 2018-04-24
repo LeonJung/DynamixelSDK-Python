@@ -81,7 +81,7 @@ portHandler = PortHandler(DEVICENAME)
 # Initialize PacketHandler instance
 # Set the protocol version
 # Get methods and members of Protocol1PacketHandler or Protocol2PacketHandler
-packetHandler = PacketHandler().getPacketHandler(PROTOCOL_VERSION)
+packetHandler = PacketHandler(PROTOCOL_VERSION)
 
 # Open port
 if portHandler.openPort():
@@ -101,7 +101,6 @@ else:
     print "Press any key to terminate..."
     getch()
     quit()
-
 
 # Enable Dynamixel Torque
 dxl_comm_result, dxl_error = packetHandler.write1ByteTxRx(portHandler, DXL_ID, ADDR_PRO_TORQUE_ENABLE, TORQUE_ENABLE)
