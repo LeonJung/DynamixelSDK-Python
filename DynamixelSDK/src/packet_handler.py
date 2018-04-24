@@ -19,25 +19,13 @@
 
 # Author: Ryu Woon Jung (Leon)
 
+from protocol1_packet_handler import *
+from protocol2_packet_handler import *
+
 def PacketHandler(protocol_version):
     if protocol_version == 1.0:
-        from protocol1_packet_handler import *
         return Protocol1PacketHandler()
     elif protocol_version == 2.0:
-        from protocol2_packet_handler import *
         return Protocol2PacketHandler()
     else:
-        from protocol2_packet_handler import *
         return Protocol2PacketHandler()
-
-# TODO: If something goes worse, those should be replaced with this
-# packetHandler = PacketHandler.getPacketHandler(PROTOCOL_VERSION)
-
-# class PacketHandler():
-#     def getPacketHandler(self, protocol_version):
-#         if protocol_version == 1.0:
-#             return Protocol1PacketHandler()
-#         elif protocol_version == 2.0:
-#             return Protocol2PacketHandler()
-#         else:
-#             return Protocol2PacketHandler()
