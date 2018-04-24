@@ -80,7 +80,7 @@ class PortHandlerLinux(object):
         #     read_bytes[i] = int.frombytes(read_bytes[i], byteorder = 'little')
 
         # for i in read_bytes:
-        #     print i
+            # print i
         return read_bytes
 
     def writePort(self, packet):

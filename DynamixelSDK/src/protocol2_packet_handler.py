@@ -207,9 +207,6 @@ class Protocol2PacketHandler(object):
         return packet
 
     def txPacket(self, port, txpacket):
-        total_packet_length = 0
-        written_packet_length = 0
-
         if port.is_using:
             return COMM_PORT_BUSY
         port.is_using = True
@@ -256,8 +253,6 @@ class Protocol2PacketHandler(object):
             rxpacket += port.readPort(wait_length - rx_length)
             rx_length = len(rxpacket)
             if rx_length >= wait_length:
-                idx = 0
-
                 # find packet header
                 for idx in range(0, (rx_length - 3)):
                     if (rxpacket[idx] == 0xFF) and (rxpacket[idx + 1] == 0xFF) and (rxpacket[idx + 2] == 0xFD) and (rxpacket[idx + 3] != 0xFD):
@@ -267,7 +262,7 @@ class Protocol2PacketHandler(object):
                     if (rxpacket[PKT_RESERVED] != 0x00) or (rxpacket[PKT_ID] > 0xFC) or (DXL_MAKEWORD(rxpacket[PKT_LENGTH_L], rxpacket[PKT_LENGTH_H]) > RXPACKET_MAX_LEN) or (rxpacket[PKT_INSTRUCTION] != 0x55):
                         # remove the first byte in the packet
                         del rxpacket[0]
-                        rx_length = rx_length - 1
+                        rx_length -= 1
                         continue
                     
                     if wait_length != (DXL_MAKEWORD(rxpacket[PKT_LENGTH_L], rxpacket[PKT_LENGTH_H]) + PKT_LENGTH_H + 1):
@@ -280,7 +275,6 @@ class Protocol2PacketHandler(object):
                                 result = COMM_RX_TIMEOUT
                             else:
                                 result = COMM_RX_CORRUPT
-                            
                             break
                         else:
                             continue
@@ -305,7 +299,6 @@ class Protocol2PacketHandler(object):
                         result = COMM_RX_TIMEOUT
                     else:
                         result = COMM_RX_CORRUPT
-                    
                     break
             
         port.is_using = False
@@ -481,7 +474,7 @@ class Protocol2PacketHandler(object):
         txpacket[PKT_INSTRUCTION]   = INST_FACTORY_RESET
         txpacket[PKT_PARAMETER0]    = option
 
-        rxpacket, result, error = self.txRxPacket(port, txpacket, rxpacket, error)
+        _, result, error = self.txRxPacket(port, txpacket, rxpacket, error)
         return result, error
 
     def readTx(self, port, id, address, length):
@@ -770,13 +763,12 @@ class Protocol2PacketHandler(object):
         txpacket[PKT_PARAMETER0 : PKT_PARAMETER0 + param_length] = param[0 : param_length]
 
         result = self.txPacket(port, txpacket)
-
         if result == COMM_SUCCESS:
             wait_length = 0
             i = 0
             while i < param_length:
-                wait_length = wait_length + DXL_MAKEWORD(param[i+3], param[i+4]) + 10
-                i = i + 5
+                wait_length += DXL_MAKEWORD(param[i+3], param[i+4]) + 10
+                i += 5
             port.setPacketTimeout(wait_length)
 
         del txpacket[:]; del txpacket

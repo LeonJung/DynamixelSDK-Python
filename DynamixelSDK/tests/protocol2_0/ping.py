@@ -47,7 +47,7 @@ else:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
 
-from dynamixel_sdk import *                 # Uses Dynamixel SDK library
+from ..src.dynamixel_sdk import *                 # Uses Dynamixel SDK library
 
 # Protocol version
 PROTOCOL_VERSION        = 2.0               # See which protocol version is used in the Dynamixel

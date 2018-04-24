@@ -20,12 +20,12 @@
 # Author: Ryu Woon Jung (Leon)
 
 #
-# *********     multi_port Example      *********
-# 
-# 
-# Available Dynamixel model on this example : All models using Protocol 2.0
-# This example is tested with two Dynamixel PRO 54-200, and two USB2DYNAMIXEL
-# Be sure that Dynamixel PRO properties are already set as %% ID : 1 / Baudnum : 1 (Baudrate : 57600)
+# *********     Multi Port Example      *********
+#
+#
+# Available Dynamixel model on this example : All models using Protocol 1.0
+# This example is tested with a Dynamixel MX-28, and two USB2DYNAMIXEL
+# Be sure that Dynamixel MX properties are already set as %% ID : 1 / Baudnum : 34 (Baudrate : 57600)
 #
 
 import os
